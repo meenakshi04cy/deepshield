@@ -1,0 +1,8 @@
+tensorflow
+flask
+pillow
+numpy
+opencv-python-headless
+google-cloud-storage
+gunicorn
+keras==3.13.2

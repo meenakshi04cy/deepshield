@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.h5
+*.keras
+*.json
+temp_video.mp4
+*.pyc
+.env
+haarcascade_frontalface_default.xml
+haarcascade_frontalface_alt2.xml
