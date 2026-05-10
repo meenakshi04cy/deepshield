@@ -6,3 +6,4 @@ opencv-python-headless
 google-cloud-storage
 gunicorn
 keras==3.13.2
+google-cloud-bigquery

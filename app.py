@@ -8,15 +8,18 @@ from flask import Flask, request, jsonify, render_template
 from google.cloud import storage
 import base64
 from PIL import Image
+from google.cloud import bigquery
+from datetime import datetime
+import hashlib
 
 app = Flask(__name__)
 
 # ── Config ──────────────────────────────────────────────────────────────────
 BUCKET_NAME = "deepfake-dataset-26"
-MODEL_BLOB = "deepshield_final.keras"
+MODEL_BLOB = "deepshield_model.h5"
 import platform
 if platform.system() == "Windows":
-    MODEL_PATH = r"C:\deepshield\deepshield_final.keras"
+    MODEL_PATH = "deepshield_model.h5"
 else:
     MODEL_PATH = "/tmp/deepshield_final.keras"
 IMG_SIZE     = 224
@@ -33,10 +36,21 @@ def setup_credentials():
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = creds_path
     else:
         # Local development fallback
-        local_creds = r"C:\Users\meena\Downloads\deepshield-493817-ca210739a648.json"
+        local_creds = local_creds = r"C:\Users\HP\Downloads\deepshield-493817-ca210739a648.json"
         if os.path.exists(local_creds):
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = local_creds
 # ── Load model from GCS ──────────────────────────────────────────────────────
+bq_client = None
+
+def get_bq_client():
+    global bq_client
+
+    if bq_client is None:
+        setup_credentials()
+        bq_client = bigquery.Client()
+
+    return bq_client
+
 def load_model():
     global model
     if model is not None:
@@ -119,6 +133,34 @@ def image_to_base64(img_array):
     buffer.seek(0)
     return base64.b64encode(buffer.read()).decode("utf-8")
 
+def log_prediction(prediction, confidence, image_bytes):
+    try:
+        client = get_bq_client()
+
+        table_id = "deepshield-493817.deepshield_data.prediction_logs"
+
+        image_hash = hashlib.md5(image_bytes).hexdigest()
+
+        rows_to_insert = [
+            {
+                "timestamp": datetime.utcnow().isoformat(),
+                "prediction": prediction,
+                "confidence_score": float(confidence),
+                "image_hash": image_hash,
+                "gradcam_generated": True
+            }
+        ]
+
+        errors = client.insert_rows_json(table_id, rows_to_insert)
+
+        if errors:
+            print("BigQuery insert errors:", errors)
+        else:
+            print("Prediction logged successfully!")
+
+    except Exception as e:
+        print("BigQuery logging failed:", e)
+
 # ── Routes ───────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
@@ -144,6 +186,9 @@ def predict():
     label = "REAL" if prediction > 0.5 else "FAKE"
     confidence = float(prediction if prediction > 0.5 else 1 - prediction)
 
+    # Log prediction to BigQuery
+    log_prediction(label, confidence * 100, image_bytes)
+
     # Grad-CAM
     heatmap = get_gradcam_heatmap(mdl, img_array)
     original_img, overlaid_img = overlay_gradcam(image_bytes, heatmap)
@@ -153,12 +198,11 @@ def predict():
     overlaid_b64 = image_to_base64(overlaid_img)
 
     return jsonify({
-        "label":      label,
+        "label": label,
         "confidence": round(confidence * 100, 1),
-        "original":   original_b64,
-        "heatmap":    overlaid_b64
+        "original": original_b64,
+        "heatmap": overlaid_b64
     })
-
 
 # ── Run ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
