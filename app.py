@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 import tensorflow as tf
 from tensorflow.keras.models import Model
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from flask import Flask, request, jsonify, render_template
 from google.cloud import storage
 import base64
@@ -76,8 +77,12 @@ def load_model():
 def preprocess_image(image_bytes):
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     img = img.resize((IMG_SIZE, IMG_SIZE))
-    img_array = np.array(img) / 255.0
+
+    img_array = np.array(img)
+    img_array = preprocess_input(img_array)
+
     img_array = np.expand_dims(img_array, axis=0)
+
     return img_array.astype(np.float32)
 
 # ── Grad-CAM ─────────────────────────────────────────────────────────────────
@@ -186,6 +191,7 @@ def predict():
 
     # Predict
     prediction = mdl.predict(img_array, verbose=0)[0][0]
+
     label = "REAL" if prediction > 0.5 else "FAKE"
     confidence = float(prediction if prediction > 0.5 else 1 - prediction)
 
