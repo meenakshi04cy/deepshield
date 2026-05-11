@@ -274,8 +274,6 @@ footer { background: var(--bg2); border-top: 1px solid var(--border); padding: 2
         <button class="btn-ghost" onclick="goTo('about')">How it Works</button>
       </div>
       <div class="hero-stats anim-up-4">
-        <div class="hero-stat"><div class="hero-stat-num">94.7%</div><div class="hero-stat-label">Accuracy</div></div>
-        <div class="hero-stat"><div class="hero-stat-num">&lt;2s</div><div class="hero-stat-label">Inference time</div></div>
         <div class="hero-stat"><div class="hero-stat-num">Grad-CAM</div><div class="hero-stat-label">Explainability</div></div>
         <div class="hero-stat"><div class="hero-stat-num">GCP</div><div class="hero-stat-label">Cloud native</div></div>
       </div>
@@ -371,7 +369,7 @@ footer { background: var(--bg2); border-top: 1px solid var(--border); padding: 2
         <button class="btn-choose" onclick="event.stopPropagation();document.getElementById('file-input').click()">Browse files</button>
         <p class="drop-formats">JPG · PNG · WEBP · max 10MB</p>
       </div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-align:center;letter-spacing:1px;">Images are never stored — only an MD5 hash is logged to BigQuery</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-align:center;letter-spacing:1px;">Uploaded images are processed temporarily and not permanently stored.</div>
     </div>
     <div id="preview-state" style="display:none;width:100%;max-width:600px;">
       <div class="preview-card">
@@ -556,10 +554,10 @@ async function runScan() {
     if(data.error) { alert(data.error); resetToUpload(); return; }
     showResults(data);
   } catch(err) {
-    clearInterval(iv);
-    await new Promise(r => setTimeout(r, 3200));
-    showResults({ label:'FAKE', confidence:87.3, original:null, heatmap:null });
-  }
+      clearInterval(iv);
+      alert("Prediction failed. Please try again.");
+      resetToUpload();
+    }
 }
 function showResults(data) {
   const isF = data.label==='FAKE';

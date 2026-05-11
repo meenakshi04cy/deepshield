@@ -16,13 +16,14 @@ app = Flask(__name__)
 
 # ── Config ──────────────────────────────────────────────────────────────────
 BUCKET_NAME = "deepfake-dataset-26"
-MODEL_BLOB = "deepshield_model.h5"
+MODEL_BLOB = "deepshield_final.keras"
+
 import platform
 if platform.system() == "Windows":
-    MODEL_PATH = "deepshield_model.h5"
+    MODEL_PATH = "deepshield_final.keras"
 else:
     MODEL_PATH = "/tmp/deepshield_final.keras"
-IMG_SIZE     = 224
+IMG_SIZE = 224
 
 model = None   # loaded once on first request
 
@@ -35,10 +36,12 @@ def setup_credentials():
             f.write(creds_json)
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = creds_path
     else:
-        # Local development fallback
-        local_creds = local_creds = r"C:\Users\HP\Downloads\deepshield-493817-ca210739a648.json"
+         # Local development fallback
+        local_creds = r"C:\Users\HP\Downloads\deepshield-493817-ca210739a648.json"
         if os.path.exists(local_creds):
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = local_creds
+        else:
+            print("Using default environment credentials")
 # ── Load model from GCS ──────────────────────────────────────────────────────
 bq_client = None
 
