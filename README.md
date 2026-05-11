@@ -141,7 +141,7 @@ This makes the model more interpretable and trustworthy.
 ### 1. Clone Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/meenakshi04cy/deepshield.git
 cd deepshield
 ```
 
